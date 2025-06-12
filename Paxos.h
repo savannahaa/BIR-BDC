@@ -1,10 +1,4 @@
 #pragma once
-// © 2022 Visa.
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <cassert>
 #include <vector>
@@ -15,15 +9,15 @@
 #include <iomanip>
 #include <cmath>
 
-#include "volePSI/Defines.h"
+#include "Defines.h"
 
-#include "cryptoTools/Common/Log.h"
-#include "cryptoTools/Common/Timer.h"
-#include "cryptoTools/Crypto/AES.h"
-#include "cryptoTools/Crypto/PRNG.h"
-#include "cryptoTools/Crypto/RandomOracle.h"
-#include "libOTe/Tools/LDPC/Mtx.h"
-#include "volePSI/PxUtil.h"
+#include <cryptoTools/Common/Log.h>
+#include <cryptoTools/Common/Timer.h>
+#include <cryptoTools/Crypto/AES.h>
+#include <cryptoTools/Crypto/PRNG.h>
+#include <cryptoTools/Crypto/RandomOracle.h>
+#include <libOTe/Tools/LDPC/Mtx.h>
+#include "PxUtil.h"
 
 namespace volePSI
 {
@@ -144,9 +138,6 @@ namespace volePSI
 		{
 			setInput(inputs);
 			encode<ValueType>(values, output, prng);
-
-			if(mDebug)
-				check(inputs, values, output);
 		}
 
 		// set the input keys which define the paxos matrix. After that,
@@ -389,31 +380,6 @@ namespace volePSI
 		template<typename Vec, typename Helper>
 		void randomizeDenseCols(Vec&, Helper&, span<u64> gapCols, oc::PRNG* prng);
 
-
-
-		template<typename ValueType>
-		void check(span<const block> inputs, MatrixView<const ValueType> values, MatrixView<const ValueType> output)
-		{
-			oc::Matrix<ValueType> v2(values.rows(), values.cols());
-			decode<ValueType>(inputs, v2, output);
-
-			for (u64 i = 0; i < values.rows(); ++i)
-			{
-				for(u64 j =0; j < values.cols(); ++j)
-					if (v2(i, j) != values(i, j))
-					{
-						std::cout << "paxos failed to encode. \n"
-							<< "inputs["<< i << "]" << inputs[i] << "\n"
-							<< "seed " << mSeed  <<"\n"
-							<< "n " << size() << "\n"
-							<< "m " << inputs.size() << "\n"
-							<< std::endl;
-						throw RTE_LOC;
-					}
-			}
-		}
-
-
 	};
 
 	// a binned version of paxos. Internally calls paxos.
@@ -425,8 +391,6 @@ namespace volePSI
 		// the parameters used on a single bim.
 		PaxosParam mPaxosParam;
 		block mSeed;
-
-		bool mDebug = false;
 
 		// when decoding, add the decoded value to the 
 		// output, as opposed to overwriting.
@@ -576,29 +540,6 @@ namespace volePSI
 		u64 modNumBins(const block& h)
 		{
 			return binIdxCompress(h) % mNumBins;
-		}
-
-
-		template<typename Vec, typename Vec2>
-		void check(span<const block> inputs, Vec values, Vec2 output)
-		{
-			auto h = values.defaultHelper();
-			auto v2 = h.newVec(values.size());
-			decode(inputs, v2, output, h, 1);
-
-			for (u64 i = 0; i < values.size(); ++i)
-			{
-				if (h.eq(v2[i],values[i]) == false)
-				{
-					std::cout << "paxos failed to encode. \n"
-						<< "inputs[" << i << "]" << inputs[i] << "\n"
-						<< "seed " << mSeed << "\n"
-						<< "n " << size() << "\n"
-						<< "m " << inputs.size() << "\n"
-						<< std::endl;
-					throw RTE_LOC;
-				}
-			}
 		}
 
 	};
