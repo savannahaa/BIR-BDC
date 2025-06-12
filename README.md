@@ -20,8 +20,8 @@ sudo cmake --install out/build/linux
 ```
 # How to call OKVS and OPRF
 ```
-git clone https://github.com/savannahaa/OKVS-and-OPRF.git
-cd OKVS-and-OPRF
+git clone https://github.com/savannahaa/BIR-BDC.git
+cd BIR-BDC
 mkdir build
 cd build
 cmake ..
