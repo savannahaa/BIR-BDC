@@ -18,10 +18,10 @@ cmake -S . -B out/build/linux -DENABLE_ASAN=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build out/build/linux
 sudo cmake --install out/build/linux
 ```
-# How to call OKVS
+# How to call OKVS and OPRF
 ```
-git clone https://github.com/savannahaa/OKVS.git
-cd OKVS
+git clone https://github.com/savannahaa/OKVS-and-OPRF.git
+cd OKVS-and-OPRF
 mkdir build
 cd build
 cmake ..
