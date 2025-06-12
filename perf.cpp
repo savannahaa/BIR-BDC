@@ -3,7 +3,6 @@
 #include "volePSI/RsPsi.h"
 #include "volePSI/RsCpsi.h"
 #include "volePSI/SimpleIndex.h"
-
 #include "libdivide.h"
 using namespace oc;
 using namespace volePSI;;
