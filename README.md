@@ -1,4 +1,4 @@
-# LibOTe
+# libdivide and LibOTe
 
 The library can be cloned and built with networking support as
 ```
