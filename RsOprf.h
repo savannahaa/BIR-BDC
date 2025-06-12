@@ -1,3 +1,4 @@
+#pragma once
 #include "Defines.h"
 #include "Paxos.h"
 #include "libOTe/Vole/Silent/SilentVoleSender.h"
