@@ -12,7 +12,9 @@
 #include <cryptoTools/Common/Timer.h>
 #include "Paxos.h"
 #include "PaxosImpl.h"
-
+#include "SimpleIndex.h"
+#include "RsPsi.h"
+#include "RsOprf.h"
 #include <libdivide.h>
 using namespace oc;
 using namespace volePSI;;
@@ -53,7 +55,7 @@ void testAdd(oc::CLP& cmd)
 	auto end = start;
 	for (u64 i = 0; i < t; ++i){
 		for (u64 j = 0; i < n; ++i){
-			key[j] = key[j]+key1[j];
+			key[j] = key[j] ^ key1[j];
 		}
 		end = timer.setTimePoint("d" + std::to_string(i));
 	}
@@ -130,16 +132,183 @@ void perfPaxosImpl(oc::CLP& cmd)
 	std::cout << "D vector size: " << D_size_MB << " MB" << std::endl;
 }
 
+void perfPaxos(oc::CLP& cmd)
+{
+	auto bits = cmd.getOr("b", 16);
+	switch (bits)
+	{
+	case 8:
+		perfPaxosImpl<u8>(cmd);
+		break;
+	case 16:
+		perfPaxosImpl<u16>(cmd);
+		break;
+	case 32:
+		perfPaxosImpl<u32>(cmd);
+		break;
+	case 64:
+		perfPaxosImpl<u64>(cmd);
+		break;
+	default:
+		std::cout << "b must be 8,16,32 or 64. " LOCATION << std::endl;
+		throw RTE_LOC;
+	}
 
+}
 
+void perfOPRF(oc::CLP& cmd)
+{
+    // 基本参数设置（从perfPSI中提取）
+    auto n = 1ull << cmd.getOr("nn", 10);
+    auto t = cmd.getOr("t", 1ull);
+    auto v = cmd.isSet("v") ? cmd.getOr("v", 1) : 0;
+    auto nt = cmd.getOr("nt", 1);
+    bool fakeBase = cmd.isSet("fakeBase");
+    
+    // VOLE类型设置
+    auto type = oc::DefaultMultType;
+#ifdef ENABLE_INSECURE_SILVER
+    type = cmd.isSet("useSilver") ? oc::MultType::slv5 : type;
+#endif
+#ifdef ENABLE_BITPOLYMUL
+    type = cmd.isSet("useQC") ? oc::MultType::QuasiCyclic : type;
+#endif
 
+    PRNG prng(ZeroBlock);
+    Timer timer, senderTimer, receiverTimer;
+    
+    std::cout << "OPRF Performance Test: nt=" << nt 
+              << " fakeBase=" << int(fakeBase) 
+              << " n=" << n << std::endl;
+
+    // 创建OPRF实例（而非完整PSI）
+    RsOprfReceiver oprfRecv;
+    RsOprfSender oprfSend;
+    
+    
+    // Bin大小设置（PaXoS vs Baxos选择）
+    if (cmd.hasValue("bs") || cmd.hasValue("lbs")) {
+        u64 binSize = cmd.getOr("bs", 1ull << cmd.getOr("lbs", 15));
+        oprfRecv.mBinSize = binSize;
+        oprfSend.mBinSize = binSize;
+    }
+    
+    // 设置VOLE类型
+    oprfRecv.setMultType(type);
+    oprfSend.setMultType(type);
+    
+    // 生成测试数据
+    std::vector<block> receiverInputs(n), oprfOutputs(n);
+    prng.get<block>(receiverInputs);
+    
+    // 设置计时器
+    oprfRecv.setTimer(receiverTimer);
+    oprfSend.setTimer(senderTimer);
+    
+    // 创建本地通信socket
+    auto sockets = cp::LocalAsyncSocket::makePair();
+    
+    // 记录时间点
+    auto totalStart = std::chrono::high_resolution_clock::now();
+    std::vector<std::chrono::high_resolution_clock::time_point> oprfStarts(t), oprfEnds(t);
+    
+    // 运行OPRF测试
+    for (u64 i = 0; i < t; ++i) {
+        timer.setTimePoint("trial_" + std::to_string(i) + "_begin");
+        
+        // 记录OPRF开始时间
+        oprfStarts[i] = std::chrono::high_resolution_clock::now();
+        
+        // 并发运行OPRF协议
+        auto recvTask = oprfRecv.receive(receiverInputs, oprfOutputs, 
+                                       prng, sockets[0], nt);
+        auto sendTask = oprfSend.send(n, prng, sockets[1], nt);
+        
+        senderTimer.setTimePoint("begin");
+        receiverTimer.setTimePoint("begin");
+        
+        // 等待OPRF协议完成
+        auto results = macoro::sync_wait(
+            macoro::when_all_ready(std::move(recvTask), std::move(sendTask))
+        );
+        
+        // 记录OPRF结束时间
+        oprfEnds[i] = std::chrono::high_resolution_clock::now();
+        
+        try { 
+            std::get<0>(results).result(); 
+        } catch(std::exception& e) {
+            std::cout << "Receiver error: " << e.what() << std::endl; 
+        }
+        
+        try { 
+            std::get<1>(results).result(); 
+        } catch(std::exception& e) {
+            std::cout << "Sender error: " << e.what() << std::endl; 
+        }
+        
+        timer.setTimePoint("trial_" + std::to_string(i) + "_end");
+    }
+    
+    auto totalEnd = std::chrono::high_resolution_clock::now();
+    
+    // 输出性能统计
+    if (v) {
+        std::cout << "\n=== OPRF Performance Results ===" << std::endl;
+        
+        // 计算总时间
+        auto totalTime = std::chrono::duration_cast<std::chrono::microseconds>(
+            totalEnd - totalStart
+        ).count() / 1000.0;
+        
+        // 计算纯OPRF时间
+        double totalOprfTime = 0;
+        for (u64 i = 0; i < t; ++i) {
+            auto oprfTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                oprfEnds[i] - oprfStarts[i]
+            ).count() / 1000.0;
+            totalOprfTime += oprfTime;
+        }
+        
+        std::cout << "Overall timing:" << std::endl;
+        std::cout << "Total time: " << totalTime << " ms" << std::endl;
+        std::cout << "Pure OPRF time: " << totalOprfTime << " ms" << std::endl;
+        std::cout << "Average OPRF time per trial: " << totalOprfTime / t << " ms" << std::endl;
+        std::cout << "OPRF time per element: " << totalOprfTime / (t * n) << " ms/element" << std::endl;
+        
+        std::cout << "\nCommunication:" << std::endl;
+        std::cout << "Sender sent: " << sockets[1].bytesSent() << " bytes" << std::endl;
+        std::cout << "Receiver sent: " << sockets[0].bytesSent() << " bytes" << std::endl;
+        std::cout << "Total communication: " 
+                  << (sockets[0].bytesSent() + sockets[1].bytesSent()) 
+                  << " bytes" << std::endl;
+        
+        double bitsPerElement = (sockets[0].bytesSent() + sockets[1].bytesSent()) * 8.0 / n;
+        std::cout << "Bits per element: " << bitsPerElement << std::endl;
+        
+        if (v > 1) {
+            std::cout << "\nDetailed timing:" << std::endl;
+            std::cout << "Sender:\n" << senderTimer << std::endl;
+            std::cout << "Receiver:\n" << receiverTimer << std::endl;
+            std::cout << "\nOPRF timing breakdown:" << std::endl;
+            for (u64 i = 0; i < t; ++i) {
+                auto oprfTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                    oprfEnds[i] - oprfStarts[i]
+                ).count() / 1000.0;
+                std::cout << "Trial " << i << ": " << oprfTime << " ms" << std::endl;
+            }
+        }
+    }
+}
 int main(int argc, char** argv){
     CLP cmd;
     cmd.parse(argc, argv);
     if (cmd.isSet("paxos")) {
-        perfPaxosImpl<u32>(cmd);  // 使用u32作为默认索引类型
+        perfPaxos(cmd);  
     } else if (cmd.isSet("gen")) {
         testGen(cmd);
+    } else if (cmd.isSet("oprf")) {
+        perfOPRF(cmd);
     } else {
         testAdd(cmd);
     }
