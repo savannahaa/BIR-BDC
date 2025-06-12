@@ -12,12 +12,6 @@
 void overflow(oc::CLP& cmd);
 void perfMod(oc::CLP& cmd);
 
-void perfBaxos(oc::CLP& cmd);
-
-
-void perfBuildRow(oc::CLP& cmd);
 void perfPaxos(oc::CLP& cmd);
 void perfPSI(oc::CLP& cmd);
-void perfCPSI(oc::CLP& cmd);
-
 void perf(oc::CLP& cmd);
