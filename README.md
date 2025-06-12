@@ -28,3 +28,8 @@ cmake ..
 make
 ./main
 ```
+
+```
+./main -paxos
+./main -oprf
+```
