@@ -4,7 +4,7 @@ project(cmakeTest)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(main main.cpp SimpleIndex.cpp)
+add_executable(main main.cpp SimpleIndex.cpp  RsOprf.cpp RsPsi.cpp) 
 
 find_package(libOTe REQUIRED)
 
