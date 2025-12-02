@@ -1,4 +1,4 @@
-// p4.cpp
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -41,11 +41,11 @@ int main()
     string valPath = "../values.csv";   // 会再生成一次 values.csv，影响不大
 
     if (!loadKeysAndGenerateValues(keys, dummyVals, keyPath, valPath)) {
-        cerr << "[p5] loadKeysAndGenerateValues failed" << endl;
+        cerr << "[pn] loadKeysAndGenerateValues failed" << endl;
         return 1;
     }
 
-    cout << "[p5] Loaded " << keys.size() << " keys." << endl;
+    cout << "[pn] Loaded " << keys.size() << " keys." << endl;
 
     int bits = 64;
     auto w   = 3;
@@ -58,7 +58,7 @@ int main()
 
     int listenSock = ::socket(AF_INET, SOCK_STREAM, 0);
     if (listenSock < 0) {
-        perror("[p5] socket");
+        perror("[pn] socket");
         return 1;
     }
 
@@ -71,18 +71,18 @@ int main()
     addr.sin_addr.s_addr = htonl(INADDR_ANY);   // 监听所有网卡
 
     if (::bind(listenSock, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-        perror("[p5] bind");
+        perror("[pn] bind");
         ::close(listenSock);
         return 1;
     }
 
     if (::listen(listenSock, 1) < 0) {
-        perror("[p5] listen");
+        perror("[pn] listen");
         ::close(listenSock);
         return 1;
     }
 
-    cout << "[p5] Listening on port " << port << " ..." << endl;
+    cout << "[pn] Listening on port " << port << " ..." << endl;
 
     sockaddr_in clientAddr{};
     socklen_t clientLen = sizeof(clientAddr);
@@ -90,21 +90,21 @@ int main()
                             reinterpret_cast<sockaddr*>(&clientAddr),
                             &clientLen);
     if (connSock < 0) {
-        perror("[p5] accept");
+        perror("[pn] accept");
         ::close(listenSock);
         return 1;
     }
 
     char clientIpStr[INET_ADDRSTRLEN] = {0};
     ::inet_ntop(AF_INET, &clientAddr.sin_addr, clientIpStr, sizeof(clientIpStr));
-    cout << "[p5] Accepted connection from "
+    cout << "[pn] Accepted connection from "
          << clientIpStr << ":" << ntohs(clientAddr.sin_port) << endl;
 
-    // 4. 从 socket 接收 D：先 rows/cols 再数据
+  
     uint64_t rows_n = 0, cols_n = 0;
     if (!recvAll(connSock, &rows_n, sizeof(rows_n)) ||
         !recvAll(connSock, &cols_n, sizeof(cols_n))) {
-        cerr << "[p5] recv rows/cols failed" << endl;
+        cerr << "[pn] recv rows/cols failed" << endl;
         ::close(connSock);
         ::close(listenSock);
         return 1;
@@ -113,14 +113,14 @@ int main()
     uint64_t rows = be64toh(rows_n);
     uint64_t cols = be64toh(cols_n);
 
-    cout << "[p5] Receiving D matrix: " << rows << " x " << cols << endl;
+    cout << "[pn] Receiving D matrix: " << rows << " x " << cols << endl;
 
     oc::Matrix<block> D(rows, cols);
     size_t dataBytes = rows * cols * sizeof(block);
 
     if (dataBytes > 0) {
         if (!recvAll(connSock, D.data(), dataBytes)) {
-            cerr << "[p5] recv D.data() failed" << endl;
+            cerr << "[pn] recv D.data() failed" << endl;
             ::close(connSock);
             ::close(listenSock);
             return 1;
@@ -139,24 +139,24 @@ int main()
               << "." << std::setfill('0') << std::setw(3) << ms.count()
               << std::endl;
     double MB = dataBytes / (1024.0 * 1024.0);
-    cout << "[p5] Received matrix dataBytes = " << dataBytes 
+    cout << "[pn] Received matrix dataBytes = " << dataBytes 
      << " bytes (" << MB << " MB)" << endl;
 
     ::close(connSock);
     ::close(listenSock);
 
-    // 5. Decode：从 D 中恢复出 vals
+
     oc::Matrix<block> decoded;
     if (!decodeOKVS_dispatch(bits, keys, D, decoded, pp, 0)) {
-        cerr << "[p5] decodeOKVS_dispatch failed" << endl;
+        cerr << "[pn] decodeOKVS_dispatch failed" << endl;
         return 1;
     }
 
-    cout << "[p5] Decode OK. Show first 3 values:" << endl;
+    cout << "[pn] Decode OK. Show first 3 values:" << endl;
     for (size_t i = 0; i < std::min<size_t>(3, keys.size()); ++i) {
         cout << "decoded[" << i << "] = " << decoded(i, 0) << endl;
     }
 
-    cout << "[p5] Done." << endl;
+    cout << "[pn] Done." << endl;
     return 0;
 }
