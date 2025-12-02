@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-add_executable(p1 p1.cpp OkvsTool.cpp SimpleIndex.cpp)
+add_executable(party1 Party1.cpp OkvsTool.cpp SimpleIndex.cpp)
 # add_executable(main main.cpp SimpleIndex.cpp  RsOprf.cpp RsPsi.cpp) 
 
 
@@ -14,11 +14,11 @@ find_package(OpenSSL REQUIRED)
 
 set(CMAKE_BUILD_TYPE Release)
 
-target_compile_options(p1 PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++17> -lpthread)
+target_compile_options(party1 PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++17> -lpthread)
 # target_compile_options(main PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++17> -lpthread)
 
 
-target_link_libraries(p1 
+target_link_libraries(party1 
     oc::libOTe
     pthread
     OpenSSL::Crypto
