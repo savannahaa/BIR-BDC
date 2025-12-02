@@ -34,7 +34,7 @@ make
 ./main -oprf
 ```
 
-# How to call okvs-based multi-party psi
+# Data Cleaning
 ```
 cd build
 cmake ..
