@@ -34,10 +34,17 @@ make
 ./main -oprf
 ```
 
-# Data Cleaning
+# Multi-party Data Cleaning
 ```
 cd build
 cmake ..
 make
+./p1
+
 ./pi
+
+./pn-1
+
+./pn
+
 ```
