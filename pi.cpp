@@ -1,4 +1,4 @@
-// p2.cpp
+// pi.cpp
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,7 +17,7 @@ using namespace osuCrypto;
 using namespace volePSI;
 using namespace oc;
 
-// 发送指定长度的数据（循环 send，确保发完）
+
 bool sendAll(int sock, const void* data, size_t len)
 {
     const char* buf = static_cast<const char*>(data);
@@ -40,7 +40,7 @@ int main()
     string keyPath = "../keys.csv";
     string valPath = "../values.csv";
 
-    // 1. 载入 keys，并根据 key 生成 values
+
     if (!loadKeysAndGenerateValues(keys, vals, keyPath, valPath)) {
         cerr << "[p2] loadKeysAndGenerateValues failed" << endl;
         return 1;
@@ -50,7 +50,7 @@ int main()
          << " keys, vals.rows() = " << vals.rows()
          << ", vals.cols() = " << vals.cols() << endl;
 
-    // 2. 构造 PaxosParam，并编码得到 D
+    
     int bits = 64;
     auto w   = 3;
     auto ssp = 40;
@@ -58,7 +58,7 @@ int main()
 
     PaxosParam pp(keys.size(), w, ssp, dt);
 
-    oc::Matrix<block> D;  // OKVS 结构 D
+    oc::Matrix<block> D;  
     if (!encodeOKVS_dispatch(bits, keys, vals, D, pp, 0)) {
         cerr << "[p2] encodeOKVS_dispatch failed" << endl;
         return 1;
@@ -66,9 +66,9 @@ int main()
 
     cout << "[p2] D encoded: " << D.rows() << " x " << D.cols() << endl;
 
-    // 3. 连接到 P4 作为 server
-    const char* serverIp = "172.24.122.107";  // 如果是另一台机器，就写那台机器的 IP
-    uint16_t port = 9000;               // 和 P4 中的端口保持一致
+   
+    const char* serverIp = "172.24.122.107"; 
+    uint16_t port = 9000;             
 
     int sock = ::socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -95,7 +95,6 @@ int main()
 
     auto now = std::chrono::system_clock::now();
 
-    // 毫秒
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch()) % 1000;
 
@@ -106,13 +105,12 @@ int main()
               << "." << std::setfill('0') << std::setw(3) << ms.count()
               << std::endl;
    
-    // 4. 发送 D：先 rows/cols，再数据
     uint64_t rows = D.rows();
     uint64_t cols = D.cols();
     uint64_t rows_n = htobe64(rows);
     uint64_t cols_n = htobe64(cols);
 
-    // 发送 rows 和 cols
+   
     if (!sendAll(sock, &rows_n, sizeof(rows_n)) ||
         !sendAll(sock, &cols_n, sizeof(cols_n))) {
         cerr << "[p2] send rows/cols failed" << endl;
@@ -120,7 +118,7 @@ int main()
         return 1;
     }
 
-    // 发送数据区
+  
     size_t dataBytes = rows * cols * sizeof(block);
     if (dataBytes > 0) {
         if (!sendAll(sock, D.data(), dataBytes)) {
