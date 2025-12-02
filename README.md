@@ -35,16 +35,17 @@ make
 ```
 
 # Multi-party Data Cleaning
-```
+The protocol initiates by concurrently activating Party1 through Partyn. Subsequently, Party1 generates cryptographic keys ki for each i in the range 2 ≤ i ≤ n−2 and securely transmits each key ki to the corresponding Partyi. Upon receipt, each Partyi (where 2 ≤ i ≤ n−2) encrypts its local data using the received key ki to produce an encrypted value. These values are then subjected to OKVS encoding, resulting in an encoded structure D, which is forwarded to Party1. Thereafter, Party1 employs the keys ki (for 2 ≤ i ≤ n−2) to encrypt and XOR the aggregated data, generating a new set of encrypted outputs. This updated data is again processed via OKVS encoding to form the revised structure D, which is subsequently transmitted to Partyn. Finally, Partyn−1 and Partyn engage in a joint computation phase to perform data cleansing and finalize the protocol.
+
 cd build
 cmake ..
 make
-./p1
+./party1
 
-./pi
+./partyi
 
-./pn-1
+./partyn-1
 
-./pn
+./partyn
 
 ```
