@@ -33,3 +33,11 @@ make
 ./main -paxos
 ./main -oprf
 ```
+
+# How to call okvs-based multi-party psi
+```
+cd build
+cmake ..
+make
+./pi
+```
