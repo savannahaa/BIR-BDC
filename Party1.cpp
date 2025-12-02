@@ -1,4 +1,3 @@
-// p1.cpp
 #include <iostream>
 #include <string>
 #include <vector>
