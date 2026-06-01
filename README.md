@@ -49,3 +49,37 @@ make
 ./partyn
 
 ```
+---
+
+## Baselines
+
+The following baseline implementations are included:
+
+- `kkrt-pdc2-repro/` — pairwise data-cleaning baseline using KKRT-style PSI.
+- `vole-pdc2-repro/` — pairwise data-cleaning baseline using VOLE-based PSI.
+- `MPSA/` — outsourced/cloud-assisted multi-party private sample alignment.
+- `MPSI/` — multi-party private set intersection baseline.
+- `libOTe/` — third-party cryptographic library.
+
+> **Note:** All baseline implementations are included for reproducibility and comparison. Original licenses are maintained where applicable.  
+
+---
+
+## Dependencies
+
+- C++17 compatible compiler
+- CMake 3.18+
+- libOTe
+- Standard libraries: Boost (optional), pthreads
+
+---
+
+## Quick Start
+
+### Build Bic-DC
+
+```bash
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
