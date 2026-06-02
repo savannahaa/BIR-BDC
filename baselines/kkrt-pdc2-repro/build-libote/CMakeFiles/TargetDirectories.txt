@@ -1,0 +1,3 @@
+/jty/xyx1/kkrt-pdc2-repro/build-libote/CMakeFiles/libote_kkrt_cost.dir
+/jty/xyx1/kkrt-pdc2-repro/build-libote/CMakeFiles/edit_cache.dir
+/jty/xyx1/kkrt-pdc2-repro/build-libote/CMakeFiles/rebuild_cache.dir
